@@ -82,7 +82,7 @@ https://an-eye-surveillance.vercel.app/
 
 ---
 
-<!--# <img src="./assets/demo.gif" width="1000"/>-->
+# <img src="./assets/demo.gif" width="1000"/>
 
 ## Backend Activation
 
