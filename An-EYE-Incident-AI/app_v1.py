@@ -1,33 +1,5 @@
 """
 An-EYE  v1.0  –  Violence Detection System
-==========================================
-
-LIVE MODE
----------
-  * HP Victus webcam (1280x720, index 0)
-  * 5-second rolling pre-event buffer always kept in memory
-  * Violence confirmed (PERSIST_FRAMES) -> evidence clip saved to violent_clips/
-  * Any new violence frame while recording  -> +EXTENSION_SECONDS added
-  * Calm for CALM_SECONDS with no violence -> clip finalised + saved
-  * Camera NEVER stops — live feed stays open throughout
-
-  videolive recording (triggered only on violence):
-    - OFF at session start; AI scans continuously
-    - Violence clip saved -> videolive recording starts immediately
-    - Records for exactly VIDEOLIVE_DURATION_SECONDS (default 120 s / 2 min)
-    - After 2 min -> recording stops, AI resumes scanning for next violence
-    - Next violence clip saved -> new videolive segment starts (seg002, seg003…)
-    - Files: videolive/live_<YYYYMMDD_HHMMSS>_seg001.mp4, seg002.mp4, …
-  * Press Q to quit
-
-VIDEO MODE
-----------
-  * Give a video file path
-  * Same AI pipeline as live (motion gate -> CNN -> pose -> fusion)
-  * No annotated export — only evidence clips saved to violent_clips/
-  * After first clip saved -> AI stops, rest of video plays raw on screen
-  * Simultaneously written to videolive/video_<timestamp>.mp4 in real-time
-  * Press Q to abort at any time
 """
 
 import csv
@@ -66,7 +38,7 @@ LIVE_OUTPUT_FOLDER   = "videolive"
 # We auto-calibrate this at startup (see _calibrate_fps).
 # You can hard-code it here if calibration is wrong:
 #   STORAGE_FPS = 6   (typical for CNN+pose on CPU)
-STORAGE_FPS          = None   # None = auto-calibrate at startup
+STORAGE_FPS          = None
 # ────────────────────────────────────────────────────────
 
 VIDEOLIVE_DURATION_SECONDS = 120   # 2-minute post-violence window
@@ -136,7 +108,7 @@ class SmartRecorder:
     CALM      = "CALM"
 
     def __init__(self, storage_fps, w, h):
-        self.fps = storage_fps   # actual loop fps — used for VideoWriter & counters
+        self.fps = storage_fps
         self.w   = w
         self.h   = h
 
@@ -149,7 +121,6 @@ class SmartRecorder:
         self.clip_path       = ""
 
     def feed(self, frame, is_violent, fusion_score=0.0):
-        """Call once per frame. Returns (path, peak_score) when clip finalised, else (None, 0.0)."""
         self.pre_buffer.append(frame.copy())
         if is_violent and fusion_score > getattr(self, "peak_score", 0.0):
             self.peak_score = fusion_score
@@ -242,12 +213,12 @@ class SmartRecorder:
 def log_event(cam_id, location, peak_score, clip_name):
     """
     Append one row to event_log.csv.
+
     timestamp  — Windows local time (same as the system clock)
     peak_score — highest fusion score recorded during the violence clip
     """
     log_path    = "event_log.csv"
     first_write = not os.path.isfile(log_path)
-    # time.strftime reads the local system clock on Windows automatically
     timestamp   = time.strftime("%Y-%m-%d %H:%M:%S")
     with open(log_path, mode="a", newline="") as fh:
         writer = csv.writer(fh)
@@ -281,7 +252,6 @@ def open_webcam(index=CAM_INDEX):
 # ==================== HUD HELPERS =======================
 
 def start_stream_server():
-
     uvicorn.run(
         app,
         host="0.0.0.0",
@@ -322,7 +292,6 @@ def draw_hud_live(frame, cnn, pose, avg, rec_state, models_active):
 
 
 def draw_hud_video(frame, cnn, pose, avg, rec_state, ts, live_ready):
-    """Returns button rect (x1,y1,x2,y2) when live_ready, else None."""
     alarm   = avg > THRESHOLD
     s_color = (0, 50, 255) if alarm else (30, 210, 30)
 
@@ -358,15 +327,6 @@ def draw_hud_video(frame, cnn, pose, avg, rec_state, ts, live_ready):
 # ==================== FPS CALIBRATION ===================
 
 def _calibrate_storage_fps(cap, w, h, sample_frames=30):
-    """
-    Run the FULL AI pipeline (motion gate + CNN + pose) on `sample_frames`
-    real webcam frames and measure the actual throughput.  This is the
-    fps value we pass to VideoWriter — if it matches the loop speed, saved
-    clips play back at real-world speed with no fast-forward or slow-motion.
-    """
-    print(f"\n[Cal] Calibrating storage FPS — running full AI pipeline "
-          f"on {sample_frames} frames…")
-
     mg = MotionGate()
     t0 = time.perf_counter()
     frames_done = 0
@@ -382,13 +342,7 @@ def _calibrate_storage_fps(cap, w, h, sample_frames=30):
 
     elapsed = time.perf_counter() - t0
     measured = frames_done / elapsed if elapsed > 0 else 6.0
-    # Clamp to something sane
     measured = max(1.0, min(measured, 30.0))
-
-    print(f"[Cal] Full-pipeline throughput: {measured:.2f} fps  "
-          f"({frames_done} frames in {elapsed:.1f}s)")
-    print(f"[Cal] VideoWriter will use {measured:.1f} fps — "
-          f"clips will play at real-world speed.")
     return measured
 
 
@@ -399,27 +353,16 @@ def start_live(cam_id="CAM1", location="Ashok Rajpath Crossing"):
     w   = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     h   = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # ── Calibrate storage FPS under real AI load ───────────────────────────
-    # We measure how many frames/sec the FULL pipeline (CNN + pose) can
-    # process on this machine.  That number becomes the VideoWriter fps so
-    # every saved file plays back at real-world speed.
     global STORAGE_FPS
     if STORAGE_FPS is None:
         STORAGE_FPS = _calibrate_storage_fps(cap, w, h)
     storage_fps = STORAGE_FPS
-    # ────────────────────────────────────────────────────────────────────────
 
-    # Flush stale frames left in the OS webcam buffer by calibration.
-    # Without this, the main loop immediately processes ~30 old frames,
-    # filling the pre-buffer and triggering a ghost clip with peak=0.
-    print("[Live] Flushing webcam buffer after calibration…")
     for _ in range(5):
         cap.read()
 
-    # videolive: write one frame every this many wall-clock seconds
     vl_frame_interval = 1.0 / storage_fps
 
-    # Fresh objects — created AFTER flushing so no calibration frames leak in
     motion_gate = MotionGate()
     recorder    = SmartRecorder(storage_fps, w, h)
     prob_buffer = deque(maxlen=SMOOTHING_WINDOW)
@@ -432,17 +375,13 @@ def start_live(cam_id="CAM1", location="Ashok Rajpath Crossing"):
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(WIN, min(w, 960), min(h, 540))
 
-    # --- videolive state (OFF until first violence clip) ---
     session_ts    = time.strftime("%Y%m%d_%H%M%S")
     segment_idx   = 0
-    live_writer   = None      # None = not recording
+    live_writer   = None
     live_file     = ""
-    live_end_time = 0.0       # wall-clock time to stop current segment
-    vl_next_write = 0.0       # next allowed write time (pacing)
-    # -------------------------------------------------------
+    live_end_time = 0.0
+    vl_next_write = 0.0
 
-    # AI pause: set to future wall-clock time when AI must stay OFF.
-    # 0.0 means AI is running normally.
     ai_paused_until = 0.0
 
     def _start_videolive_segment():
@@ -458,7 +397,7 @@ def start_live(cam_id="CAM1", location="Ashok Rajpath Crossing"):
             storage_fps, (w, h),
         )
         live_end_time = time.time() + VIDEOLIVE_DURATION_SECONDS
-        vl_next_write = time.time()   # accept first frame immediately
+        vl_next_write = time.time()
         remaining     = VIDEOLIVE_DURATION_SECONDS
         print(f"[Live] videolive seg {segment_idx} STARTED  "
               f"@ {storage_fps:.1f} fps  ->  {live_file}")
@@ -482,13 +421,11 @@ def start_live(cam_id="CAM1", location="Ashok Rajpath Crossing"):
         now = time.time()
         ai_paused = now < ai_paused_until
 
-        # ── Close videolive segment when 2-min window elapses ──
         if live_writer is not None and now >= live_end_time:
             _stop_videolive_segment()
-            ai_paused_until = 0.0          # allow AI to run again
+            ai_paused_until = 0.0
             print("[Live] 2-min window done. AI resumed.")
 
-        # ── Write one frame to videolive at the calibrated pace ──
         if live_writer is not None:
             if now >= vl_next_write:
                 live_writer.write(frame)
@@ -497,14 +434,12 @@ def start_live(cam_id="CAM1", location="Ashok Rajpath Crossing"):
         annotated = frame.copy()
 
         if ai_paused:
-            # ── AI is OFF — show a simple countdown overlay ──
             remaining = ai_paused_until - now
             cv2.rectangle(annotated, (10, 8), (420, 50), (0, 0, 0), -1)
             _put(annotated,
                  f"AI PAUSED  —  recording aftermath  ({remaining:.0f}s remaining)",
                  (16, 36), 0.62, (0, 210, 255), 2)
         else:
-            # ── AI is ON ──
             models_active = motion_gate.check(frame)
             is_violent    = False
 
@@ -554,7 +489,6 @@ def start_live(cam_id="CAM1", location="Ashok Rajpath Crossing"):
                 except Exception as upload_err:
                     print(f"[Live] Upload/send failed (network?): {upload_err}")
                     print("[Live] Clip saved locally. Continuing…")
-                # Pause AI and start videolive recording regardless of upload result
                 ai_paused_until = now + VIDEOLIVE_DURATION_SECONDS
                 _stop_videolive_segment()
                 _start_videolive_segment()
@@ -579,25 +513,13 @@ def start_live(cam_id="CAM1", location="Ashok Rajpath Crossing"):
 # ==================== VIDEO RAW PLAYBACK ================
 
 def _raw_playback_and_record(cap, fps, w, h, from_frame):
-    """
-    Plays the rest of `cap` starting at `from_frame`.
-
-    Simultaneously:
-      1. Shows every frame in a live window on the laptop screen.
-      2. Writes every frame in real-time to  videolive.mp4
-         (file grows frame-by-frame as playback progresses).
-
-    No AI runs here at all.
-    Stops when the video ends or the user presses Q.
-    """
     WIN       = "A-EYE | LIVE Footage (Q=quit)"
     live_ts   = time.strftime("%Y%m%d_%H%M%S")
     LIVE_FILE = os.path.join(LIVE_OUTPUT_FOLDER, f"video_{live_ts}.mp4")
-    delay     = max(1, int(1000 / fps))   # pace to real video speed
+    delay     = max(1, int(1000 / fps))
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, from_frame)
 
-    # Resizable playback window
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(WIN, min(w, 960), min(h, 540))
 
@@ -620,16 +542,13 @@ def _raw_playback_and_record(cap, fps, w, h, from_frame):
 
         ts = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
 
-        # Overlay — minimal, clean
         display = frame.copy()
         cv2.rectangle(display, (10, 8), (280, 48), (0, 0, 0), -1)
         _put(display, f"LIVE  |  {ts:.1f}s", (16, 36), 0.78, (0, 210, 255), 2)
 
         frame_buffer.latest_frame = display.copy()
-        # 1. Show on screen
         cv2.imshow(WIN, display)
 
-        # 2. Write raw (no overlay) to videolive.mp4 in real-time
         live_writer.write(frame)
         frames_written += 1
 
@@ -648,23 +567,6 @@ def _raw_playback_and_record(cap, fps, w, h, from_frame):
 # ==================== VIDEO MODE ========================
 
 def analyze_video(video_path, cam_id="CAM2", location="Gandhi Maidan Gate 2"):
-    """
-    Phase 1 — AI analysis
-    ---------------------
-    Runs motion gate + CNN + pose + fusion on every frame.
-    SmartRecorder: 5s pre-buffer, dynamic extension, calm-state stop.
-    Saves evidence clip(s) to violent_clips/.
-
-    Phase 2 — Auto live playback  (triggered automatically after first save)
-    -------------------------------------------------------------------------
-    The moment the first violence clip is finalised and saved:
-      * AI analysis stops immediately.
-      * Raw playback starts from the current frame position.
-      * Every remaining frame is shown on screen AND written to videolive.mp4
-        in real-time, simultaneously.
-      * No AI runs during this phase.
-      * Stops when the video file ends (or user presses Q).
-    """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print(f"[Video] Cannot open: {video_path}")
@@ -688,7 +590,6 @@ def analyze_video(video_path, cam_id="CAM2", location="Gandhi Maidan Gate 2"):
     WIN   = "A-EYE | Video Analysis (Q=quit)"
     delay = max(1, int(1000 / fps))
 
-    # Resizable window — opens at a comfortable size, drag to enlarge freely
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(WIN, min(w, 960), min(h, 540))
 
@@ -755,15 +656,9 @@ def analyze_video(video_path, cam_id="CAM2", location="Gandhi Maidan Gate 2"):
             print("[Video] Phase 1 complete.")
             print("[Video] Phase 2: switching to LIVE playback automatically...")
 
-            # -------------------------------------------------
-            # PHASE 2: AI stops here.
-            # Hand off current cap position to raw playback.
-            # frame_index+1 because we already consumed this frame.
-            # -------------------------------------------------
             cv2.destroyWindow(WIN)
             _raw_playback_and_record(cap, fps, w, h, frame_index + 1)
 
-            # After playback ends, break out of analysis loop entirely
             cap.release()
             cv2.destroyAllWindows()
 
@@ -772,9 +667,8 @@ def analyze_video(video_path, cam_id="CAM2", location="Gandhi Maidan Gate 2"):
             print(f"|   Violence clips : {total_clips:<22} |")
             print(f"|   Live footage   : videolive/ folder     |")
             print("+------------------------------------------+")
-            return   # <-- exit function; no further processing
+            return
 
-        # Draw HUD on analysis window (phase 1 only)
         draw_hud_video(annotated, cnn, pose, avg,
                        recorder.status(), ts, live_ready=False)
         cv2.imshow(WIN, annotated)
@@ -786,38 +680,33 @@ def analyze_video(video_path, cam_id="CAM2", location="Gandhi Maidan Gate 2"):
             pct = frame_index / max(total_frames, 1) * 100
             print(f"  ... {frame_index}/{total_frames}  ({pct:.0f}%)")
 
-    # --- Reached EOF without any violence detected ---
     saved, peak = recorder.force_finalise()
     if saved:
         log_event(cam_id, location, peak, saved)
         print(f"[Video] EOF flush -> {saved}  peak={peak:.3f}")
         try:
-         converted_clip = convert_to_browser_format(saved)
+            converted_clip = convert_to_browser_format(saved)
 
-         clip_url = upload_clip(converted_clip)
+            clip_url = upload_clip(converted_clip)
 
-         print("Uploaded:", clip_url)
+            print("Uploaded:", clip_url)
 
-         incident = generate_incident(
-            camera_data={
-                "camera_id": cam_id,
-                "city": "Patna",
-                "precinct": "River Zone",
-                "location": location,
-                "latitude": 25.6208,
-                "longitude": 85.1450 
-            },
-            confidence=peak,
-            violence_type="Physical Assault",
+            incident = generate_incident(
+                camera_data={
+                    "camera_id": cam_id,
+                    "city": "Patna",
+                    "precinct": "River Zone",
+                    "location": location,
+                    "latitude": 25.6208,
+                    "longitude": 85.1450
+                },
+                confidence=peak,
+                violence_type="Physical Assault",
+                clip_path=clip_url,
+                thumbnail_path=None,
+            )
 
-            # IMPORTANT
-            clip_path=clip_url,
-
-            thumbnail_path=None,
-         )
-        
-
-         send_incident(incident)
+            send_incident(incident)
         except Exception as upload_err:
             print(f"[Video] EOF upload/send failed (network?): {upload_err}")
             print("[Video] Clip saved locally.")
