@@ -1,0 +1,1099 @@
+Good.
+This means your backend architecture is already progressing correctly.
+
+You have now reached:
+
+> Phase 3 — Database Infrastructure
+
+And the error is NOT a coding problem.
+
+It simply means:
+
+> PostgreSQL server is not installed/running properly yet.
+
+This is completely normal.
+
+Now I’ll guide you properly through the setup process.
+
+---
+
+# WHAT HAS ALREADY BEEN COMPLETED
+
+You already created:
+
+✅ SQLAlchemy base
+✅ DB connection logic
+✅ Incident model
+✅ Operator model
+✅ Station model
+✅ create_tables.py
+✅ .env template
+✅ Database initialization structure
+
+This is excellent progress.
+
+---
+
+# WHY THE ERROR HAPPENED
+
+Your code tried to connect to:
+
+```text id="x2m7n4"
+localhost:5432
+```
+
+But:
+
+* PostgreSQL server is not running
+  OR
+* PostgreSQL is not installed
+  OR
+* PATH variables missing
+
+So Python cannot connect.
+
+---
+
+# NOW WE FIX IT STEP BY STEP
+
+---
+
+# STEP 1 — INSTALL POSTGRESQL
+
+Go to:
+
+## Windows Installer
+
+[PostgreSQL Download Page](https://www.postgresql.org/download/windows/?utm_source=chatgpt.com)
+
+Download:
+
+> PostgreSQL 16 (recommended)
+
+---
+
+# STEP 2 — INSTALL WITH THESE SETTINGS
+
+During installation:
+
+---
+
+## IMPORTANT SETTINGS
+
+### Port
+
+Keep:
+
+```text id="m4q9r2"
+5432
+```
+
+Default.
+
+---
+
+## Username
+
+Keep:
+
+```text id="t7v1k5"
+postgres
+```
+
+---
+
+## Password
+
+Choose a password.
+
+Example:
+
+```text id="d8p3n6"
+Aeye123
+```
+
+Remember this carefully.
+
+---
+
+## Stack Builder
+
+Optional.
+Can skip.
+
+---
+
+# STEP 3 — VERIFY POSTGRESQL SERVICE RUNNING
+
+After installation:
+
+Open:
+
+```text id="c1x5m8"
+services.msc
+```
+
+Find:
+
+```text id="r6n2w4"
+postgresql-x64-16
+```
+
+Status should be:
+
+> Running
+
+---
+
+# IF NOT RUNNING
+
+Right-click:
+
+> Start
+
+---
+
+# STEP 4 — VERIFY PSQL WORKS
+
+Open CMD:
+
+Run:
+
+```bash id="u9m4q7"
+psql --version
+```
+
+If installed correctly:
+
+```text id="k2r8v1"
+psql (PostgreSQL) 16.x
+```
+
+---
+
+# IF “PSQL NOT FOUND”
+
+Need PATH fix.
+
+---
+
+# STEP 5 — ADD POSTGRESQL BIN TO PATH
+
+Usually located:
+
+```text id="g5w1n9"
+C:\Program Files\PostgreSQL\16\bin
+```
+
+---
+
+# ADD TO PATH
+
+## Windows
+
+Search:
+
+> Environment Variables
+
+Then:
+
+```text id="j3x7m2"
+System Variables
+↓
+Path
+↓
+Edit
+↓
+New
+```
+
+Paste PostgreSQL bin path.
+
+Restart terminal.
+
+---
+
+# STEP 6 — LOGIN TO POSTGRESQL
+
+Open CMD:
+
+```bash id="b7q2r5"
+psql -U postgres
+```
+
+Enter password.
+
+If successful:
+
+```text id="f1n6w8"
+postgres=#
+```
+
+---
+
+# STEP 7 — CREATE DATABASE
+
+Inside psql:
+
+```sql id="v4m9k1"
+CREATE DATABASE an_eye_db;
+```
+
+Then verify:
+
+```sql id="q8r3p6"
+\l
+```
+
+You should see:
+
+> an_eye_db
+
+---
+
+# STEP 8 — CREATE REAL .ENV FILE
+
+Now create:
+
+```text id="s5w2n7"
+.env
+```
+
+Inside project root.
+
+---
+
+# CONTENT
+
+Example:
+
+```env id="p1x8m4"
+DATABASE_URL=postgresql://postgres:Aeye123@localhost:5432/an_eye_db
+```
+
+---
+
+# IMPORTANT
+
+Replace:
+
+* password
+* database name
+
+with YOUR actual values.
+
+---
+
+# STEP 9 — INSTALL REQUIRED PYTHON PACKAGES
+
+Run:
+
+```bash id="n7m1q5"
+pip install -r requirements.txt
+```
+
+---
+
+# IMPORTANT PACKAGE
+
+Ensure this exists:
+
+```text id="h3v9k2"
+psycopg2-binary
+```
+
+This is PostgreSQL driver.
+
+---
+
+# STEP 10 — RUN TABLE CREATION
+
+Now:
+
+```bash id="x6r4m8"
+python create_tables.py
+```
+
+---
+
+# EXPECTED SUCCESS
+
+You should see something like:
+
+```text id="c8n2w5"
+Tables created successfully
+```
+
+---
+
+# STEP 11 — VERIFY TABLES
+
+Open psql again:
+
+```bash id="m9q1r7"
+psql -U postgres -d an_eye_db
+```
+
+Then:
+
+```sql id="y4v8k3"
+\dt
+```
+
+You should see:
+
+```text id="a2m5n9"
+incidents
+operators
+police_stations
+```
+
+---
+
+# CONGRATULATIONS
+
+At this point:
+
+> Your surveillance system officially has a production-grade database layer.
+
+This is a major milestone.
+
+---
+
+# WHAT PHASE 3 ACTUALLY ACHIEVES
+
+Before:
+
+```text id="k7r1m4"
+AI detects violence
+↓
+temporary local files
+```
+
+Now:
+
+```text id="z3n8v2"
+AI detects violence
+↓
+structured incidents
+↓
+persistent database storage
+↓
+online retrieval possible
+```
+
+This transforms your project from:
+
+> AI script
+
+into:
+
+> backend-driven surveillance infrastructure
+
+---
+
+# AFTER THIS, NEXT PHASE
+
+Once tables are working:
+
+Next step becomes:
+
+```text id="u1x6m9"
+PHASE 4 — INCIDENT API
+```
+
+Meaning:
+
+* FastAPI receives incidents
+* AI uploads incidents online
+* dashboard fetches incidents dynamically
+
+That is where your project truly becomes online.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+version 2 -- without phase 11
+
+Excellent.
+Since you want to run AN-EYE locally first (without cloud deployment/Phase 11), this is the correct next move.
+
+Right now your goal is:
+
+> Start the complete local stack successfully.
+
+That means:
+
+* PostgreSQL running
+* FastAPI backend running
+* database tables created
+* seed data loaded
+* simulated AI uploads working
+* React dashboard connected
+* WebSockets functioning
+
+---
+
+# FINAL LOCAL STARTUP FLOW
+
+You will start the system in this order:
+
+```text id="jlwma5"
+1. PostgreSQL
+2. Database Tables
+3. Seed Data
+4. FastAPI Backend
+5. React Dashboard
+6. Simulated AI Detection
+```
+
+This is the correct startup sequence.
+
+---
+
+# STEP 1 — START POSTGRESQL
+
+Open Windows Services:
+
+```text id="jlwmb6"
+services.msc
+```
+
+Find:
+
+```text id="jlwmc7"
+postgresql-x64-16
+```
+
+Ensure status:
+
+```text id="jlwmd8"
+Running
+```
+
+If not:
+Right-click → Start
+
+---
+
+# STEP 2 — VERIFY `.env`
+
+Project root should contain:
+
+```text id="jlwme9"
+.env
+```
+
+Example:
+
+```env id="jlwmf0"
+DATABASE_URL=postgresql://postgres:Aeye123@localhost:5432/an_eye_db
+SECRET_KEY=super_secret_key
+```
+
+---
+
+# STEP 3 — INSTALL PYTHON DEPENDENCIES
+
+From project root:
+
+Run:
+
+```bash id="jlwmg1"
+pip install -r requirements.txt
+```
+
+Your requirements are already mostly complete. 
+
+---
+
+# STEP 4 — CREATE DATABASE TABLES
+
+Run:
+
+```bash id="jlwmh2"
+python create_tables.py
+```
+
+Your table initializer is already correctly wired. 
+
+---
+
+# EXPECTED RESULT
+
+```text id="jlwmi3"
+Database tables created successfully
+```
+
+---
+
+# STEP 5 — SEED POLICE STATIONS
+
+Run:
+
+```bash id="jlwmj4"
+python seed_stations.py
+```
+
+This already inserts/upserts real station data. 
+
+---
+
+# EXPECTED RESULT
+
+```text id="jlwmk5"
+Stations seeded successfully
+```
+
+---
+
+# STEP 6 — SEED USERS
+
+Run:
+
+```bash id="jlwml6"
+python seed_users.py
+```
+
+This already creates:
+
+* operator1
+* supervisor1
+* admin1 
+
+---
+
+# EXPECTED RESULT
+
+```text id="jlwmm7"
+Users seeded successfully
+```
+
+---
+
+# STEP 7 — START FASTAPI BACKEND
+
+Run:
+
+```bash id="jlwmn8"
+uvicorn backend.main:app --reload
+```
+
+---
+
+# EXPECTED RESULT
+
+```text id="jlwmo9"
+Uvicorn running on:
+http://127.0.0.1:8000
+```
+
+---
+
+# STEP 8 — VERIFY BACKEND
+
+Open browser:
+
+```text id="jlwmp0"
+http://127.0.0.1:8000/docs
+```
+
+You should see:
+
+* Swagger UI
+* login endpoint
+* incidents endpoint
+* websocket routes
+
+---
+
+# STEP 9 — TEST LOGIN
+
+Inside Swagger:
+
+Use:
+
+```json id="jlwmq1"
+POST /login
+
+{
+  "username": "operator1",
+  "password": "password123"
+}
+```
+
+These credentials already exist from your seed script. 
+
+---
+
+# EXPECTED RESULT
+
+```json id="jlwmr2"
+{
+  "access_token": "...",
+  "role": "Operator"
+}
+```
+
+---
+
+# STEP 10 — START FRONTEND
+
+Open NEW terminal.
+
+Go to dashboard folder:
+
+```bash id="jlwms3"
+cd dashboard
+```
+
+Install packages:
+
+```bash id="jlwmt4"
+npm install
+```
+
+Then run:
+
+```bash id="jlwmu5"
+npm run dev
+```
+
+---
+
+# EXPECTED RESULT
+
+```text id="jlwmv6"
+http://localhost:5173
+```
+
+---
+
+# STEP 11 — OPEN DASHBOARD
+
+Open:
+
+```text id="jlwmw7"
+http://localhost:5173
+```
+
+You should see:
+
+* dashboard
+* map
+* incident feed
+* websocket-connected frontend
+
+---
+
+# STEP 12 — TEST AI → BACKEND PIPELINE
+
+Open THIRD terminal.
+
+Run:
+
+```bash id="jlwmx8"
+python simulate_ai_detection.py
+```
+
+Your simulation file is already correctly configured. 
+
+---
+
+# EXPECTED RESULT
+
+Backend receives incident.
+
+Dashboard updates instantly.
+
+New incident appears.
+
+---
+
+# STEP 13 — VERIFY REALTIME ALERTS
+
+When simulation runs:
+
+You should see:
+
+* new incident card
+* websocket update
+* map marker
+* live feed update
+
+WITHOUT refreshing page.
+
+That confirms:
+Realtime Engine works.
+
+---
+
+# STEP 14 — TEST REVIEW PAGE
+
+Click incident card.
+
+Expected:
+
+* review page opens
+* video player loads
+* metadata visible
+* map centered on incident
+
+---
+
+# STEP 15 — TEST REVIEW ACTIONS
+
+Try:
+
+* FALSE_POSITIVE
+* PENDING
+* ESCALATED
+
+Expected:
+
+* status updates
+* websocket broadcasts
+* dashboard syncs instantly
+
+---
+
+# STEP 16 — TEST DISPATCH ENGINE
+
+Open:
+
+```text id="jlwmy9"
+GET /dispatch/{incident_id}
+```
+
+Expected:
+
+* nearest stations
+* distances
+* dispatch recommendations
+
+---
+
+# STEP 17 — VERIFY AUDIT LOGS
+
+Every review action should:
+
+* create audit entry
+* save timestamp
+* save operator action
+
+This confirms:
+audit chain works.
+
+---
+
+# YOUR FINAL LOCAL DEVELOPMENT SETUP
+
+You should now have:
+
+```text id="jlwmz0"
+PostgreSQL
+      ↓
+FastAPI Backend
+      ↓
+WebSockets
+      ↓
+React Dashboard
+      ↓
+Realtime Incident Pipeline
+```
+
+Running completely locally.
+
+---
+
+# IMPORTANT DAILY STARTUP COMMANDS
+
+Every time you work on AN-EYE:
+
+---
+
+# TERMINAL 1
+
+Backend:
+
+```bash id="jlwma1"
+uvicorn backend.main:app --reload
+```
+
+---
+
+# TERMINAL 2
+
+Frontend:
+
+```bash id="jlwmb2"
+cd dashboard
+npm run dev
+```
+
+---
+
+# TERMINAL 3
+
+Simulated AI:
+
+```bash id="jlwmc3"
+python simulate_ai_detection.py
+```
+
+---
+
+# IMPORTANT NEXT REAL TASK
+
+After local system works consistently:
+
+Your next real engineering task is:
+
+```text id="jlwmd4"
+Replace simulated AI with real AI engine
+```
+
+Because:
+everything else is already architecturally ready.
+
+
+
+
+
+version - 2.1 -> when everything is installed
+
+If everything is already installed and configured, then your startup process becomes very simple.
+
+You only need to start the services in the correct order.
+
+---
+
+# AN-EYE LOCAL STARTUP (FAST VERSION)
+
+## STEP 1 — START POSTGRESQL
+
+Make sure PostgreSQL service is running.
+
+Windows:
+
+```text id="jlwme5"
+services.msc
+```
+
+Check:
+
+```text id="jlwmf6"
+postgresql-x64-16
+```
+
+Status should be:
+
+```text id="jlwmg7"
+Running
+```
+
+---
+
+# STEP 2 — START BACKEND
+
+Open Terminal 1.
+
+From project root:
+
+```bash id="jlwmh8"
+uvicorn backend.main:app --reload
+```
+
+---
+
+# EXPECTED RESULT
+
+```text id="jlwmi9"
+Uvicorn running on:
+http://127.0.0.1:8000
+```
+
+---
+
+# STEP 3 — START FRONTEND
+
+Open Terminal 2.
+
+Go to dashboard:
+
+```bash id="jlwmj0"
+cd dashboard
+```
+
+Run:
+
+```bash id="jlwmk1"
+npm run dev
+```
+
+---
+
+# EXPECTED RESULT
+
+```text id="jlwml2"
+Local: http://localhost:5173
+```
+
+---
+
+# STEP 4 — OPEN DASHBOARD
+
+Open browser:
+
+```text id="jlwmm3"
+http://localhost:5173
+```
+
+You should now see:
+
+* dashboard
+* map
+* incident feed
+* websocket-connected frontend
+
+---
+
+# STEP 5 — TEST BACKEND
+
+Open:
+
+```text id="jlwmn4"
+http://127.0.0.1:8000/docs
+```
+
+Swagger should appear.
+
+---
+
+# STEP 6 — TEST LOGIN
+
+Use:
+
+```json id="jlwmo5"
+{
+  "username": "operator1",
+  "password": "password123"
+}
+```
+
+These users already exist from your seed script. 
+
+---
+
+# STEP 7 — TEST AI PIPELINE
+
+Open Terminal 3.
+
+Run:
+
+```bash id="jlwmp6"
+python simulate_ai_detection.py
+```
+
+Your simulation script is already properly configured. 
+
+---
+
+# EXPECTED RESULT
+
+Instantly:
+
+* backend receives incident
+* PostgreSQL stores incident
+* websocket broadcasts
+* dashboard updates live
+* map marker appears
+
+WITHOUT refresh.
+
+---
+
+# STEP 8 — TEST REVIEW SYSTEM
+
+Click an incident card.
+
+Expected:
+
+* review page opens
+* video loads
+* map centers on incident
+* action buttons work
+
+---
+
+# STEP 9 — TEST STATUS WORKFLOW
+
+Test:
+
+* FALSE_POSITIVE
+* PENDING
+* ESCALATED
+
+Expected:
+
+* DB updates
+* audit logs save
+* dashboard syncs live
+
+---
+
+# DAILY DEVELOPMENT FLOW
+
+Every time you work on AN-EYE:
+
+| Terminal | Command                             |
+| -------- | ----------------------------------- |
+| Backend  | `uvicorn backend.main:app --reload` |
+| Frontend | `cd dashboard && npm run dev`       |
+| AI Test  | `python simulate_ai_detection.py`   |
+
+---
+
+# IMPORTANT
+
+At this point:
+your architecture is already beyond prototype level.
+
+The next REAL milestone is:
+
+```text id="jlwmq7"
+Replace simulated AI
+with real YOLO/TensorFlow pipeline
+```
+
+Because:
+the rest of the infrastructure is already prepared for real detections.
+
+

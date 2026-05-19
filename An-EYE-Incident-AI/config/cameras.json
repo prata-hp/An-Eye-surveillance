@@ -1,0 +1,31 @@
+[
+  {
+    "camera_id": "CAM-01",
+    "city": "Patna",
+    "precinct": "South Belt",
+    "location": "Ashok Rajpath Crossing",
+    "latitude": 25.6175,
+    "longitude": 85.1710,
+    "stream_url": "rtsp://192.168.1.10/live"
+  },
+
+  {
+    "camera_id": "CAM-02",
+    "city": "Patna",
+    "precinct": "River Zone",
+    "location": "Gandhi Maidan Gate 2",
+    "latitude": 25.6208,
+    "longitude": 85.1450,
+    "stream_url": "rtsp://192.168.1.11/live"
+  },
+
+  {
+    "camera_id": "CAM-03",
+    "city": "Kolkata",
+    "precinct": "Central Belt",
+    "location": "Park Street Crossing",
+    "latitude": 22.5510,
+    "longitude": 88.3520,
+    "stream_url": "rtsp://192.168.1.12/live"
+  }
+]

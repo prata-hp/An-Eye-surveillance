@@ -1,0 +1,13 @@
+numpy==1.26.4
+opencv-python==4.9.0.80
+tensorflow==2.13.0
+torch==2.1.2+cu118
+torchvision==0.16.2+cu118
+torchaudio==2.1.2+cu118
+ultralytics==8.2.0
+pandas==2.1.4
+pillow>=9.0.0
+tqdm==4.67.3
+
+#step 1: pip install torch==2.1.2+cu118 torchvision==0.16.2+cu118 torchaudio==2.1.2+cu118 --index-url https://download.pytorch.org/whl/cu118
+#step 2: pip install -r requirements.txt --no-deps

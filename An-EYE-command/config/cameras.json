@@ -1,0 +1,12 @@
+[
+  {
+    "camera_id": "CAM-001",
+    "city": "Patna",
+    "precinct": "South Belt",
+    "location": "Ashok Rajpath Crossing",
+    "latitude": 25.6196,
+    "longitude": 85.1622,
+    "status": "ONLINE",
+    "stream_url": "rtsp://camera.local/CAM-001"
+  }
+]

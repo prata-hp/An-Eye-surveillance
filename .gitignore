@@ -1,0 +1,38 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+.next/
+
+# Environment
+.env
+.env.local
+
+# # AI Models
+# *.pt
+# *.h5
+# *.onnx
+
+# Storage
+storage/
+clips/
+thumbnails/
+
+# Logs
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+*.mp4
+*.avi
+*.mov
+
+ai_engine_backup/
+
+storage/
+clips/
+thumbnails/

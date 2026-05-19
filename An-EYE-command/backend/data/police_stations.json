@@ -1,0 +1,20 @@
+[
+  {
+    "station_id": "PS001",
+    "name": "Pirbahore Police Station",
+    "latitude": 25.6201,
+    "longitude": 85.1735
+  },
+  {
+    "station_id": "PS002",
+    "name": "Gandhi Maidan Police Station",
+    "latitude": 25.6124,
+    "longitude": 85.1415
+  },
+  {
+    "station_id": "PS003",
+    "name": "Kotwali Police Station",
+    "latitude": 25.6142,
+    "longitude": 85.1492
+  }
+]
